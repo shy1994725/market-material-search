@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>市场资料自助查询</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f5f5;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 30px 20px;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 32px 28px;
+    width: 100%;
+    max-width: 700px;
+    border: 0.5px solid #e0e0e0;
+    position: relative;
+  }
+
+  h1 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 4px;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: #888;
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+
+  .form-group {
+    margin-bottom: 16px;
+  }
+
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 6px;
+  }
+
+  .required::after {
+    content: " *";
+    color: #E25555;
+  }
+
+  select, input[type="text"] {
+    width: 100%;
+    height: 42px;
+    border: 0.5px solid #d0d0d0;
+    border-radius: 8px;
+    padding: 0 12px;
+    font-size: 14px;
+    color: #1a1a1a;
+    background: #fff;
+    font-family: inherit;
+    transition: border-color 0.15s;
+  }
+
+  select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+    cursor: pointer;
+  }
+
+  input[type="text"]:focus, select:focus {
+    outline: none;
+    border-color: #534AB7;
+  }
+
+  input[type="text"]::placeholder { color: #bbb; }
+
+  .btn {
+    width: 100%;
+    height: 44px;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .btn-primary {
+    background: #534AB7;
+    color: #fff;
+    margin-top: 4px;
+  }
+
+  .btn-primary:hover { background: #3C3489; }
+  .btn-primary:disabled {
+    background: #B0ADC8;
+    cursor: not-allowed;
+  }
+
+  .btn-download {
+    background: #1D9E75;
+    color: #fff;
+  }
+  .btn-download:hover { background: #147B5A; }
+
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    display: none;
+  }
+  .btn-primary.loading .spinner { display: block; }
+  .btn-primary.loading .btn-text { opacity: 0.6; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  .tag {
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    background: #EEEDFE;
+    color: #534AB7;
+    cursor: pointer;
+    border: none;
+    font-family: inherit;
+    transition: background 0.15s;
+  }
+
+  .tag:hover { background: #CECBF6; }
+  .tag.active { background: #534AB7; color: #fff; }
+
+  /* ===== 结果区 ===== */
+  .result-section { display: none; margin-top: 24px; }
+
+  .result-section.visible { display: block; }
+
+  .section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .file-list {
+    list-style: none;
+    margin-bottom: 20px;
+  }
+
+  .file-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    background: #F8F7FC;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    font-size: 13px;
+    color: #333;
+    line-height: 1.5;
+  }
+
+  .file-icon {
+    width: 20px; height: 20px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .file-name {
+    flex: 1;
+    word-break: break-all;
+  }
+
+  .file-date {
+    font-size: 11px;
+    color: #999;
+    white-space: nowrap;
+  }
+
+  .file-dl {
+    width: 28px; height: 28px;
+    flex-shrink: 0;
+    border: 0.5px solid #d0d0d0;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    color: #534AB7;
+    font-size: 14px;
+    text-decoration: none;
+  }
+  .file-dl:hover { background: #534AB7; color: #fff; border-color: #534AB7; }
+
+  .copy-box {
+    background: #F1EFE8;
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 14px;
+    color: #1a1a1a;
+    line-height: 1.7;
+    border: 0.5px solid #e0e0e0;
+    margin-bottom: 14px;
+    position: relative;
+  }
+
+  .copy-box-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .btn-small {
+    height: 34px;
+    padding: 0 14px;
+    border: 0.5px solid #d0d0d0;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    background: #fff;
+    color: #333;
+    font-family: inherit;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .btn-small:hover { border-color: #534AB7; color: #534AB7; }
+  .btn-small.copied { background: #E1F5EE; border-color: #1D9E75; color: #0F6E56; }
+
+  .error-box {
+    background: #FEE;
+    border: 0.5px solid #E55;
+    border-radius: 8px;
+    padding: 14px 16px;
+    color: #A33;
+    font-size: 13px;
+    margin-top: 12px;
+    display: none;
+  }
+
+  .error-box.visible { display: block; }
+
+  .service-status {
+    font-size: 11px;
+    color: #aaa;
+    margin-top: 8px;
+    text-align: center;
+  }
+  .service-status.online { color: #1D9E75; }
+  .service-status.offline { color: #E55; }
+  .service-status.checking { color: #F90; }
+
+  /* ===== 两列配对表格 ===== */
+  .pair-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 14px;
+    font-size: 12px;
+  }
+  .pair-table th {
+    text-align: left;
+    padding: 8px 10px;
+    background: #F8F7FC;
+    color: #534AB7;
+    font-weight: 600;
+    font-size: 12px;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  .pair-table th:first-child { width: 28%; border-radius: 8px 0 0 0; }
+  .pair-table th:nth-child(2) { width: 22%; }
+  .pair-table th:last-child { width: 50%; border-radius: 0 8px 0 0; }
+  .pair-table td {
+    padding: 8px 10px;
+    vertical-align: top;
+    border-bottom: 0.5px solid #f0f0f0;
+    line-height: 1.5;
+  }
+  .pair-table tr:last-child td { border-bottom: none; }
+  .pair-name {
+    word-break: break-all;
+    color: #333;
+  }
+  .pair-date {
+    font-size: 10px;
+    color: #999;
+    display: block;
+    margin-top: 2px;
+  }
+  .pair-dl {
+    display: inline-block;
+    width: 26px; height: 26px;
+    border: 0.5px solid #d0d0d0;
+    border-radius: 5px;
+    background: #fff;
+    cursor: pointer;
+    line-height: 26px;
+    text-align: center;
+    color: #534AB7;
+    text-decoration: none;
+    font-size: 13px;
+    margin-top: 3px;
+    transition: all 0.15s;
+  }
+  .pair-dl:hover { background: #534AB7; color: #fff; border-color: #534AB7; }
+  .no-answer {
+    color: #bbb;
+    font-style: italic;
+    font-size: 12px;
+  }
+  .standalone-answer-tag {
+    font-size: 10px;
+    background: #FFF3CD;
+    color: #664D03;
+    padding: 1px 6px;
+    border-radius: 3px;
+    display: inline-block;
+    margin-top: 3px;
+  }
+  /* 逐份话术（第三列） */
+  .per-copy {
+    font-size: 12px;
+    color: #333;
+    line-height: 1.6;
+    background: #f9f8f3;
+    border-radius: 6px;
+    padding: 8px 10px;
+    position: relative;
+  }
+  .per-copy-text {
+    margin-bottom: 6px;
+  }
+  .per-copy-actions {
+    display: flex;
+    gap: 6px;
+  }
+  .per-copy-btn {
+    font-size: 11px;
+    padding: 2px 8px;
+    border: 0.5px solid #d0d0d0;
+    border-radius: 4px;
+    background: #fff;
+    color: #534AB7;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .per-copy-btn:hover { background: #534AB7; color: #fff; border-color: #534AB7; }
+  .per-copy-btn.copied { background: #E1F5EE; border-color: #1D9E75; color: #0F6E56; }
+  .per-copy-loading {
+    font-size: 11px;
+    color: #999;
+    font-style: italic;
+  }
+  .filtered-info {
+    background: #FFF3CD;
+    border: 0.5px solid #FFC107;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: #664D03;
+    margin-bottom: 10px;
+    line-height: 1.5;
+  }
+
+  .warning-banner {
+    display: none;
+    background: #FFF3CD;
+    border: 0.5px solid #FFC107;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: #664D03;
+    margin-bottom: 16px;
+    line-height: 1.6;
+  }
+  .warning-banner.show { display: block; }
+
+  /* ===== 更新日志 ===== */
+  .update-section {
+    margin-top: 24px;
+    padding-top: 18px;
+    border-top: 0.5px solid #e0e0e0;
+  }
+  .update-section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .update-list {
+    list-style: none;
+  }
+  .update-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 0;
+    font-size: 13px;
+    color: #555;
+  }
+  .update-item .update-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #1D9E75;
+    flex-shrink: 0;
+  }
+  .update-item .update-date {
+    font-size: 11px;
+    color: #999;
+    white-space: nowrap;
+    margin-left: auto;
+    padding-left: 10px;
+  }
+  .update-item .update-name {
+    flex: 1;
+    word-break: break-all;
+    line-height: 1.4;
+  }
+  .update-empty {
+    font-size: 13px;
+    color: #999;
+    text-align: center;
+    padding: 10px 0;
+  }
+  .update-loading {
+    font-size: 12px;
+    color: #aaa;
+    text-align: center;
+    padding: 10px 0;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>市场资料自助查询</h1>
+  <p class="subtitle">选择年级和学科，输入知识点关键字，一键搜索资料并生成家长群话术。</p>
+
+  <!-- 非本地访问警告 -->
+  <div class="warning-banner" id="originWarning">
+    请通过 <strong>http://localhost:8765</strong> 访问此页面。<br>
+    <span style="font-size:12px;color:#A86;">当前访问地址无法连接后端服务。请在 WorkBuddy 中确认后端已启动，然后用上方地址打开。</span>
+  </div>
+
+  <div class="form-group">
+    <label class="required" for="grade">年级</label>
+    <select id="grade">
+      <option value="">请选择年级</option>
+      <option value="六年级" selected>六年级</option>
+      <option value="七年级">七年级（初一）</option>
+      <option value="八年级">八年级（初二）</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label class="required" for="subject">学科</label>
+    <select id="subject">
+      <option value="">请选择学科</option>
+      <option value="语文">语文</option>
+      <option value="数学">数学</option>
+      <option value="英语">英语</option>
+      <option value="科学">科学</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label class="required" for="keyword">知识点关键字</label>
+    <input type="text" id="keyword" placeholder="如：阅读理解、计算题、语法、实验">
+    <div class="tag-row" id="quickTags"></div>
+  </div>
+
+  <button class="btn btn-primary" id="searchBtn" onclick="doSearch()">
+    <span class="spinner"></span>
+    <span class="btn-text">搜索资料并生成话术</span>
+  </button>
+
+  <div class="error-box" id="errorBox"></div>
+
+  <!-- 搜索结果区 -->
+  <div class="result-section" id="resultSection">
+    <!-- 过滤提示 -->
+    <div id="filterInfo" style="display:none;"></div>
+
+    <!-- 资料清单（两列表格） -->
+    <div class="section-title">
+      <span>📋</span> 找到以下资料（共 <span id="pairCount">0</span> 组）：
+    </div>
+    <table class="pair-table" id="pairTable">
+      <thead>
+        <tr>
+          <th>📄 资料</th>
+          <th>✅ 答案</th>
+          <th>💬 参考话术</th>
+        </tr>
+      </thead>
+      <tbody id="pairBody"></tbody>
+    </table>
+
+    <!-- 提示文字 -->
+    <p style="font-size: 12px; color: #999; line-height: 1.6; margin-top: 12px;">
+      每份资料右侧有专属参考话术，点击「复制」即可粘贴到微信家长群。点击表格中的 ⬇ 按钮可直接下载对应的PDF文件。
+    </p>
+  </div>
+
+  <!-- 更新日志 -->
+  <div class="update-section" id="updateSection">
+    <div class="update-section-title">
+      <span>📅</span> 近三个月新增资料
+    </div>
+    <div class="update-loading" id="updateLoading">加载中...</div>
+    <ul class="update-list" id="updateList" style="display:none;"></ul>
+    <div class="update-empty" id="updateEmpty" style="display:none;">暂无新增资料</div>
+  </div>
+
+  <div class="service-status" id="statusBar">服务状态检查中...</div>
+</div>
+
+<script>
+
+  // 页面加载时立即检查服务状态
+  checkStatus();
+  // 加载更新日志
+  loadUpdates();
+
+  // 快捷标签
+  function updateQuickTags() {
+    var subject = document.getElementById('subject').value;
+    var tags = [];
+    if (subject === '语文') tags = ['阅读理解', '作文', '文言文', '基础专项', '真题卷'];
+    else if (subject === '数学') tags = ['计算题', '应用题', '方程', '几何', '真题卷'];
+    else if (subject === '英语') tags = ['语法', '阅读理解', '作文', '单词', '真题卷'];
+    else if (subject === '科学') tags = ['实验', '知识点', '真题卷', '讲义'];
+    else tags = [];
+
+    var html = '';
+    tags.forEach(function(t) {
+      html += '<button class="tag" onclick="setKeyword(\'' + t + '\')">' + t + '</button>';
+    });
+    document.getElementById('quickTags').innerHTML = html;
+  }
+
+  document.getElementById('subject').addEventListener('change', updateQuickTags);
+  updateQuickTags();
+
+  function setKeyword(val) {
+    document.getElementById('keyword').value = val;
+    document.getElementById('keyword').focus();
+  }
+
+  // 服务状态检查
+  function checkStatus() {
+    var bar = document.getElementById('statusBar');
+    var origin = window.location.origin;
+    var hostname = window.location.hostname;
+
+    // 检测是否在本地打开
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1' && origin.indexOf('file://') === -1) {
+      // 非本地访问 → 显示警告
+      document.getElementById('originWarning').classList.add('show');
+      bar.textContent = '非本地访问，搜索功能不可用';
+      bar.className = 'service-status offline';
+      return;
+    }
+
+    // 多次重试健康检查（服务器可能刚启动）
+    var retries = 0;
+    var maxRetries = 3;
+    bar.className = 'service-status checking';
+    bar.textContent = '正在连接服务...';
+    function tryHealth() {
+      fetch('/api/health')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.status === 'ok') {
+            bar.textContent = '服务运行中';
+            bar.className = 'service-status online';
+          } else {
+            bar.textContent = '服务异常';
+            bar.className = 'service-status offline';
+          }
+        })
+        .catch(function() {
+          retries++;
+          if (retries < maxRetries) {
+            bar.textContent = '正在连接服务... (' + retries + '/' + maxRetries + ')';
+            setTimeout(tryHealth, 1500);
+          } else {
+            bar.textContent = '服务未连接，请确认后端已启动';
+            bar.className = 'service-status offline';
+          }
+        });
+    }
+    tryHealth();
+  }
+
+  // 搜索
+  function doSearch() {
+    var grade = document.getElementById('grade').value;
+    var subject = document.getElementById('subject').value;
+    var keyword = document.getElementById('keyword').value.trim();
+
+    // 校验
+    if (!grade || !subject) {
+      showError('请选择年级和学科');
+      return;
+    }
+    if (!keyword) {
+      showError('请输入知识点关键字');
+      return;
+    }
+
+    // UI loading
+    var btn = document.getElementById('searchBtn');
+    btn.classList.add('loading');
+    btn.disabled = true;
+    hideError();
+    document.getElementById('resultSection').classList.remove('visible');
+
+    fetch('/api/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        grade: grade,
+        subject: subject,
+        keyword: keyword
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      btn.classList.remove('loading');
+      btn.disabled = false;
+
+      if (data.error) {
+        showError(data.error);
+        return;
+      }
+
+      renderResults(data);
+    })
+    .catch(function(err) {
+      btn.classList.remove('loading');
+      btn.disabled = false;
+      var hostname = window.location.hostname;
+      if (hostname !== 'localhost' && hostname !== '127.0.0.1' && window.location.protocol !== 'file:') {
+        showError('当前页面不在本地服务器上打开。请用浏览器访问 http://127.0.0.1:8765 ，不要用其他地址或直接双击 HTML 文件。');
+      } else if (err.message === 'Failed to fetch') {
+        showError('❌ 无法连接到后端服务。\n\n可能原因：\n1. 服务器未启动 → 在 WorkBuddy 中运行 python server.py\n2. 浏览器缓存了旧页面 → 按 Ctrl+Shift+R 强制刷新\n3. 安全软件拦截了本地连接 → 检查防火墙设置\n\n当前服务器地址：http://127.0.0.1:8765');
+      } else {
+        showError('连接异常：' + err.message + '\n请刷新页面后重试。');
+      }
+    });
+  }
+
+  // 渲染结果（三列配对版）
+  function renderResults(data) {
+    var pairs = data.pairs || [];
+    document.getElementById('pairCount').textContent = pairs.length;
+
+    // 过滤提示
+    var filterHtml = '';
+    if (data.grade_filtered > 0 || data.keyword_mismatched > 0) {
+      filterHtml = '<div class="filtered-info">';
+      if (data.grade_filtered > 0) filterHtml += '⚠️ 已过滤 ' + data.grade_filtered + ' 条其他年级的资料。<br>';
+      if (data.keyword_mismatched > 0) filterHtml += '⚠️ 已过滤 ' + data.keyword_mismatched + ' 条与「' + escapeHtml(data.keyword || '') + '」文件名不匹配的资料。<br>';
+      filterHtml += '</div>';
+    }
+    var filterEl = document.getElementById('filterInfo');
+    if (filterHtml) {
+      filterEl.innerHTML = filterHtml;
+      filterEl.style.display = 'block';
+    } else {
+      filterEl.style.display = 'none';
+    }
+
+    // 两列表格
+    var bodyHtml = '';
+    if (pairs.length === 0) {
+      bodyHtml = '<tr><td colspan="3" style="text-align:center;color:#999;padding:20px;">未找到匹配资料，请尝试其他关键词</td></tr>';
+    } else {
+      pairs.forEach(function(p) {
+        var mat = p.material;
+        var ans = p.answer;
+        bodyHtml += '<tr>';
+
+        // 左列：资料
+        bodyHtml += '<td>';
+        bodyHtml += '<span class="pair-name">' + escapeHtml(mat.name || '') + '</span>';
+        if (mat.date && mat.date !== '未知') {
+          bodyHtml += '<span class="pair-date">' + mat.date + '</span>';
+        }
+        if (mat.id) {
+          bodyHtml += '<a class="pair-dl" href="/api/download/' + encodeURIComponent(mat.id) + '" title="下载文件" download>⬇</a>';
+        }
+        if (p.is_standalone_answer) {
+          bodyHtml += '<span class="standalone-answer-tag">仅答案</span>';
+        }
+        bodyHtml += '</td>';
+
+        // 右列：答案
+        bodyHtml += '<td>';
+        if (ans) {
+          bodyHtml += '<span class="pair-name">' + escapeHtml(ans.name || '') + '</span>';
+          if (ans.date && ans.date !== '未知') {
+            bodyHtml += '<span class="pair-date">' + ans.date + '</span>';
+          }
+          if (ans.id) {
+            bodyHtml += '<a class="pair-dl" href="/api/download/' + encodeURIComponent(ans.id) + '" title="下载答案" download>⬇</a>';
+          }
+        } else if (p.is_standalone_answer) {
+          bodyHtml += '<span class="no-answer">—</span>';
+        } else {
+          bodyHtml += '<span class="no-answer">缺答案</span>';
+        }
+        bodyHtml += '</td>';
+
+        // 第三列：专属参考话术
+        bodyHtml += '<td>';
+        if (p.copy) {
+          bodyHtml += '<div class="per-copy">';
+          bodyHtml += '<div class="per-copy-text">' + escapeHtml(p.copy) + '</div>';
+          bodyHtml += '<div class="per-copy-actions">';
+          bodyHtml += '<button class="per-copy-btn" onclick="copyPerCopy(this,\'' + encodeURIComponent(p.copy || '') + '\')">复制</button>';
+          bodyHtml += '</div>';
+          bodyHtml += '</div>';
+        } else {
+          bodyHtml += '<span class="per-copy-loading">生成中…</span>';
+        }
+        bodyHtml += '</td>';
+
+        bodyHtml += '</tr>';
+      });
+    }
+    document.getElementById('pairBody').innerHTML = bodyHtml;
+
+    document.getElementById('resultSection').classList.add('visible');
+  }
+
+  // 逐份话术复制
+  function copyPerCopy(btn, encoded) {
+    var text = decodeURIComponent(encoded);
+    navigator.clipboard.writeText(text).then(function() {
+      var orig = btn.textContent;
+      btn.textContent = '已复制';
+      btn.classList.add('copied');
+      setTimeout(function() {
+        btn.textContent = orig;
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(function() {
+      // fallback
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed'; ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      btn.classList.add('copied');
+      var orig = btn.textContent;
+      btn.textContent = '已复制';
+      setTimeout(function() { btn.textContent = orig; btn.classList.remove('copied'); }, 1800);
+    });
+  }
+
+  function showError(msg) {
+    var el = document.getElementById('errorBox');
+    el.textContent = msg;
+    el.classList.add('visible');
+  }
+
+  function hideError() {
+    document.getElementById('errorBox').classList.remove('visible');
+  }
+
+  function escapeHtml(text) {
+    var d = document.createElement('div');
+    d.textContent = text;
+    return d.innerHTML;
+  }
+
+  // 加载更新日志
+  function loadUpdates() {
+    fetch('/api/updates')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        document.getElementById('updateLoading').style.display = 'none';
+        var updates = data.updates || [];
+        if (updates.length === 0) {
+          document.getElementById('updateEmpty').style.display = 'block';
+          return;
+        }
+        var html = '';
+        updates.forEach(function(u) {
+          html += '<li class="update-item">';
+          html += '<span class="update-dot"></span>';
+          html += '<span class="update-name">' + escapeHtml(u.name) + '</span>';
+          html += '<span class="update-date">' + (u.date || '') + '</span>';
+          html += '</li>';
+        });
+        var listEl = document.getElementById('updateList');
+        listEl.innerHTML = html;
+        listEl.style.display = 'block';
+      })
+      .catch(function() {
+        document.getElementById('updateLoading').style.display = 'none';
+        document.getElementById('updateEmpty').style.display = 'block';
+        document.getElementById('updateEmpty').textContent = '更新日志加载失败（请确认后端服务已启动）';
+      });
+  }
+</script>
+</body>
+</html>

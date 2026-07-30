@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.workbuddy/
+*.bat
+upload_*.py
+upload_result_*.json
+test_fetch.html
+batch_tag.py
+deploy/

@@ -1,0 +1,145 @@
+{
+  "_说明": "10个标准回归测试用例。改代码后跑一遍，全通过才算没改坏。",
+  "_维护": "每次发现新的翻车场景，在这里追加一条测试用例。",
+  "test_cases": [
+    {
+      "id": "TC01",
+      "name": "六年级数学计算",
+      "input": {"grade": "六年级", "subject": "数学", "keyword": "计算"},
+      "expect": {"min_files": 2, "all_have_subject_abbr": "SX", "all_have_grade": "六年级"}
+    },
+    {
+      "id": "TC02",
+      "name": "七年级语文阅读理解",
+      "input": {"grade": "七年级", "subject": "语文", "keyword": "阅读"},
+      "expect": {"min_files": 1, "all_have_subject_abbr": "YW", "all_have_grade": "七年级"}
+    },
+    {
+      "id": "TC03",
+      "name": "八年级英语语法",
+      "input": {"grade": "八年级", "subject": "英语", "keyword": "语法"},
+      "expect": {"min_files": 1, "all_have_subject_abbr": "YY", "all_have_grade": "八年级"}
+    },
+    {
+      "id": "TC04",
+      "name": "六年级科学实验",
+      "input": {"grade": "六年级", "subject": "科学", "keyword": "实验"},
+      "expect": {"min_files": 1, "all_have_subject_abbr": "KX", "all_have_grade": "六年级"}
+    },
+    {
+      "id": "TC05",
+      "name": "七年级数学方程",
+      "input": {"grade": "七年级", "subject": "数学", "keyword": "方程"},
+      "expect": {"min_files": 1, "all_have_subject_abbr": "SX", "all_have_grade": "七年级"}
+    },
+    {
+      "id": "TC06",
+      "name": "学科门禁-搜语文不应返回数学",
+      "input": {"grade": "六年级", "subject": "语文", "keyword": "阅读"},
+      "expect": {"forbidden_abbr": ["SX", "YY", "KX"]}
+    },
+    {
+      "id": "TC07",
+      "name": "学科门禁-搜数学不应返回英语",
+      "input": {"grade": "六年级", "subject": "数学", "keyword": "计算"},
+      "expect": {"forbidden_abbr": ["YW", "YY", "KX"]}
+    },
+    {
+      "id": "TC08",
+      "name": "年级门禁-搜六年级不应返回七年级",
+      "input": {"grade": "六年级", "subject": "数学", "keyword": "计算"},
+      "expect": {"forbidden_grades": ["七年级", "八年级"]}
+    },
+    {
+      "id": "TC09",
+      "name": "文件名关键字匹配-计算题应匹配计算",
+      "input_type": "function_test",
+      "function": "name_contains_keyword",
+      "params": {"name": "【SX】【六年级】【25】数学计算题练习", "keyword": "计算题"},
+      "expect": true
+    },
+    {
+      "id": "TC10",
+      "name": "话术红线扫描-含价格应触发警告",
+      "input_type": "function_test",
+      "function": "scan_copy_violations",
+      "params": {"copy_text": "家长您好！这份资料原价99元，现在只要59元。"},
+      "expect": {"clean": false, "min_violations": 1}
+    }
+  ],
+  "unit_tests": [
+    {
+      "id": "UT01",
+      "function": "is_answer_file",
+      "cases": [
+        {"input": "【SX】【六年级】【25】数学练习卷（答案）", "expect": true},
+        {"input": "【YW】【七年级】【12】阅读理解训练（解析版）", "expect": true},
+        {"input": "【SX】【六年级】【25】数学练习卷", "expect": false},
+        {"input": "【KX】【八年级】【08】科学实验讲义", "expect": false}
+      ]
+    },
+    {
+      "id": "UT02",
+      "function": "extract_grade_from_name",
+      "cases": [
+        {"input": "【SX】【六年级】【25】数学计算", "expect": "六年级"},
+        {"input": "【YW】【七年级】【12】阅读理解", "expect": "七年级"},
+        {"input": "【YY】【八年级】【05】英语语法", "expect": "八年级"},
+        {"input": "【KX】【六年级】【08】科学实验", "expect": "六年级"}
+      ]
+    },
+    {
+      "id": "UT03",
+      "function": "extract_number_prefix",
+      "cases": [
+        {"input": "【SX】【六年级】【25-612】数学计算练习", "expect": "【SX】【六年级】【25-612】"},
+        {"input": "【YW】【七年级】【12】阅读理解", "expect": "【YW】【七年级】【12】"},
+        {"input": "随便一个文件名不会有前缀", "expect": null}
+      ]
+    },
+    {
+      "id": "UT04",
+      "function": "name_contains_keyword",
+      "cases": [
+        {"input": {"name": "【SX】【六年级】【25】数学计算题训练", "keyword": "计算"}, "expect": true},
+        {"input": {"name": "【SX】【六年级】【25】数学计算题训练", "keyword": "计算题"}, "expect": true},
+        {"input": {"name": "【YW】【七年级】【12】阅读理解训练", "keyword": "阅读"}, "expect": true},
+        {"input": {"name": "【SX】【六年级】【25】数学几何训练", "keyword": "计算"}, "expect": false}
+      ]
+    },
+    {
+      "id": "UT05",
+      "function": "pair_files",
+      "cases": [
+        {
+          "input": [
+            {"name": "【SX】【六年级】【25】数学练习卷"},
+            {"name": "【SX】【六年级】【25】数学练习卷（答案版）"}
+          ],
+          "expect": "pairs_matched",
+          "check": "first_pair_has_answer"
+        }
+      ]
+    },
+    {
+      "id": "UT06",
+      "function": "scan_copy_violations",
+      "cases": [
+        {"input": "这是一份普通的练习资料，适合课后巩固。", "expect": {"clean": true}},
+        {"input": "家长您好！只要9.9元就能获得全部资料。", "expect": {"clean": false}},
+        {"input": "名额有限，仅限10人报名。", "expect": {"clean": false}},
+        {"input": "该课程升学率达到95%。", "expect": {"clean": false}}
+      ]
+    },
+    {
+      "id": "UT07",
+      "function": "_compose_copy",
+      "cases": [
+        {
+          "input": {"topics": ["阅读理解"], "material_name": "【YW】【六年级】【12】小升初阅读理解训练", "subject": "语文", "grade_label": "小升初"},
+          "expect": {"must_contain": "家长您好", "must_not_contain": "各位家长好"}
+        }
+      ]
+    }
+  ]
+}

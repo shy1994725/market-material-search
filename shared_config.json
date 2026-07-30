@@ -1,0 +1,24 @@
+{
+  "_说明": "市场资料助手共享配置——server.py 和 cloud.html 的唯一真源。改规则只需改这里，两个文件自动同步。",
+  "lexiang_mcp_url": "https://mcp.lexiang-app.com/mcp",
+  "space_id": "f613e85b2f404609b029d6dcb84bf00a",
+  "subject_abbr": {
+    "语文": "YW",
+    "数学": "SX",
+    "英语": "YY",
+    "科学": "KX"
+  },
+  "grade_patterns": [
+    {"label": "六年级", "pattern": "(六上|六下|六年级|6年级|六)"},
+    {"label": "七年级", "pattern": "(七上|七下|七年级|7年级|初一)"},
+    {"label": "八年级", "pattern": "(八上|八下|八年级|8年级|初二)"}
+  ],
+  "answer_suffix_pattern": "[（(]?[】\\s]*(答案|解析|参考答案|参考解析|答案解析|答案版|解析版)[）)]",
+  "number_prefix_pattern": "(【[A-Z]{2}】【[^】]+】【[^】]+】)",
+  "copy_redline_patterns": [
+    {"name": "价格", "pattern": "\\d+\\s*元[/每]|\\d+\\s*元\\s*$|\\d+\\s*元[^/每]|\\d+课时|\\d+节课|[0-9]+\\s*元"},
+    {"name": "名额限制", "pattern": "仅限\\d|限额|先到先得|名额有限|仅剩|招满|抢报|限\\d+人"},
+    {"name": "升学率", "pattern": "升学率|上线率|录取率|保送|签约班|包过|提分\\d+"}
+  ],
+  "_变更记录": "v1.0 — 2026-07-30 首次创建，抽出 server.py 和 cloud.html 中的全部共享规则"
+}

@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+<title>市场资料自助查询</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f5f5;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 30px 20px;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 32px 28px;
+    width: 100%;
+    max-width: 780px;
+    border: 0.5px solid #e0e0e0;
+  }
+
+  h1 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 4px;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: #888;
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+
+  .form-group { margin-bottom: 16px; }
+
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 6px;
+  }
+
+  .required::after { content: " *"; color: #E25555; }
+
+  select, input[type="text"] {
+    width: 100%;
+    height: 42px;
+    border: 0.5px solid #d0d0d0;
+    border-radius: 8px;
+    padding: 0 12px;
+    font-size: 14px;
+    color: #1a1a1a;
+    background: #fff;
+    font-family: inherit;
+    transition: border-color 0.15s;
+  }
+
+  select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+    cursor: pointer;
+  }
+
+  input[type="text"]:focus, select:focus { outline: none; border-color: #534AB7; }
+  input[type="text"]::placeholder { color: #bbb; }
+
+  .btn {
+    width: 100%;
+    height: 44px;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .btn-primary { background: #534AB7; color: #fff; margin-top: 4px; }
+  .btn-primary:hover { background: #3C3489; }
+  .btn-primary:disabled { background: #B0ADC8; cursor: not-allowed; }
+
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    display: none;
+  }
+  .btn-primary.loading .spinner { display: block; }
+  .btn-primary.loading .btn-text { opacity: 0.6; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+
+  .tag {
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    background: #EEEDFE;
+    color: #534AB7;
+    cursor: pointer;
+    border: none;
+    font-family: inherit;
+    transition: background 0.15s;
+  }
+  .tag:hover { background: #CECBF6; }
+  .tag.active { background: #534AB7; color: #fff; }
+
+  /* 结果区 */
+  .result-section { display: none; margin-top: 24px; }
+  .result-section.visible { display: block; }
+
+  .section-title {
+    font-size: 14px; font-weight: 600; color: #333;
+    margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+  }
+
+  .pair-table {
+    width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 12px;
+  }
+  .pair-table th {
+    text-align: left; padding: 8px 10px; background: #F8F7FC;
+    color: #534AB7; font-weight: 600; font-size: 12px; border-bottom: 1px solid #e0e0e0;
+  }
+  .pair-table th:first-child { width: 35%; border-radius: 8px 0 0 0; }
+  .pair-table th:nth-child(2) { width: 25%; }
+  .pair-table th:last-child { width: 40%; border-radius: 0 8px 0 0; }
+  .pair-table td {
+    padding: 8px 10px; vertical-align: top; border-bottom: 0.5px solid #f0f0f0; line-height: 1.5;
+  }
+  .pair-table tr:last-child td { border-bottom: none; }
+
+  .pair-name { word-break: break-all; color: #333; }
+  .pair-date { font-size: 10px; color: #999; display: block; margin-top: 2px; }
+
+  .pair-dl {
+    display: inline-block; width: 26px; height: 26px;
+    border: 0.5px solid #d0d0d0; border-radius: 5px; background: #fff;
+    cursor: pointer; line-height: 26px; text-align: center;
+    color: #534AB7; text-decoration: none; font-size: 13px;
+    margin-top: 3px; transition: all 0.15s;
+  }
+  .pair-dl:hover { background: #534AB7; color: #fff; border-color: #534AB7; }
+
+  .no-answer { color: #bbb; font-style: italic; font-size: 12px; }
+  .standalone-answer-tag {
+    font-size: 10px; background: #FFF3CD; color: #664D03;
+    padding: 1px 6px; border-radius: 3px; display: inline-block; margin-top: 3px;
+  }
+
+  .per-copy {
+    font-size: 12px; color: #333; line-height: 1.6;
+    background: #f9f8f3; border-radius: 6px; padding: 8px 10px;
+  }
+  .per-copy-text { margin-bottom: 6px; }
+  .per-copy-actions { display: flex; gap: 6px; }
+  .per-copy-btn {
+    font-size: 11px; padding: 2px 8px; border: 0.5px solid #d0d0d0;
+    border-radius: 4px; background: #fff; color: #534AB7;
+    cursor: pointer; font-family: inherit; transition: all 0.15s;
+  }
+  .per-copy-btn:hover { background: #534AB7; color: #fff; border-color: #534AB7; }
+  .per-copy-btn.copied { background: #E1F5EE; border-color: #1D9E75; color: #0F6E56; }
+  .per-copy-loading { font-size: 11px; color: #999; font-style: italic; }
+
+  .filtered-info {
+    background: #FFF3CD; border: 0.5px solid #FFC107; border-radius: 6px;
+    padding: 8px 12px; font-size: 12px; color: #664D03;
+    margin-bottom: 10px; line-height: 1.5;
+  }
+
+  .error-box {
+    background: #FEE; border: 0.5px solid #E55; border-radius: 8px;
+    padding: 14px 16px; color: #A33; font-size: 13px;
+    margin-top: 12px; display: none;
+  }
+  .error-box.visible { display: block; }
+
+  .service-status {
+    font-size: 11px; color: #aaa; margin-top: 8px; text-align: center;
+  }
+  .service-status.online { color: #1D9E75; }
+  .service-status.offline { color: #E55; }
+  .service-status.checking { color: #F90; }
+
+  /* 更新日志 */
+  .update-section {
+    margin-top: 24px; padding-top: 18px; border-top: 0.5px solid #e0e0e0;
+  }
+  .update-section-title {
+    font-size: 14px; font-weight: 600; color: #333;
+    margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+  }
+  .update-list { list-style: none; }
+  .update-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 0; font-size: 13px; color: #555;
+  }
+  .update-item .update-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #1D9E75; flex-shrink: 0;
+  }
+  .update-item .update-date {
+    font-size: 11px; color: #999; white-space: nowrap;
+    margin-left: auto; padding-left: 10px;
+  }
+  .update-item .update-name { flex: 1; word-break: break-all; line-height: 1.4; }
+  .update-empty, .update-loading { font-size: 13px; color: #999; text-align: center; padding: 10px 0; }
+
+  /* 代理配置遮罩 */
+  .proxy-overlay {
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5); z-index: 1000;
+    align-items: center; justify-content: center;
+  }
+  .proxy-overlay.show { display: flex; }
+  .proxy-dialog {
+    background: #fff; border-radius: 12px; padding: 28px 24px;
+    max-width: 420px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  }
+  .proxy-dialog h3 { font-size: 16px; margin-bottom: 12px; color: #333; }
+  .proxy-dialog p { font-size: 13px; color: #666; line-height: 1.6; margin-bottom: 12px; }
+  .proxy-dialog .proxy-step {
+    font-size: 12px; color: #888; margin-bottom: 4px;
+    padding: 6px 10px; background: #f8f7fc; border-radius: 6px;
+  }
+  .proxy-dialog .proxy-step code {
+    font-size: 12px; background: #EEEDFE; color: #534AB7;
+    padding: 1px 6px; border-radius: 3px; font-family: monospace;
+  }
+  .proxy-input-row { display: flex; gap: 8px; margin-top: 10px; }
+  .proxy-input-row input { flex: 1; height: 40px; }
+  .proxy-input-row button { width: auto; padding: 0 16px; height: 40px; font-size: 13px; }
+  .proxy-skip {
+    display: block; text-align: center; font-size: 12px; color: #999;
+    margin-top: 8px; cursor: pointer; text-decoration: underline;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>市场资料自助查询</h1>
+  <p class="subtitle" id="modeHint">选择年级和学科，输入知识点关键字，一键搜索资料并生成家长群话术。</p>
+
+  <div class="form-group">
+    <label class="required" for="grade">年级</label>
+    <select id="grade">
+      <option value="">请选择年级</option>
+      <option value="六年级" selected>六年级</option>
+      <option value="七年级">七年级（初一）</option>
+      <option value="八年级">八年级（初二）</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label class="required" for="subject">学科</label>
+    <select id="subject">
+      <option value="">请选择学科</option>
+      <option value="语文">语文</option>
+      <option value="数学">数学</option>
+      <option value="英语">英语</option>
+      <option value="科学">科学</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label class="required" for="keyword">知识点关键字</label>
+    <input type="text" id="keyword" placeholder="如：阅读理解、计算题、语法、实验">
+    <div class="tag-row" id="quickTags"></div>
+  </div>
+
+  <button class="btn btn-primary" id="searchBtn" onclick="doSearch()">
+    <span class="spinner"></span>
+    <span class="btn-text">搜索资料并生成话术</span>
+  </button>
+
+  <div class="error-box" id="errorBox"></div>
+
+  <!-- 搜索结果 -->
+  <div class="result-section" id="resultSection">
+    <div id="filterInfo" style="display:none;"></div>
+    <div class="section-title">
+      <span>📋</span> 找到以下资料（共 <span id="pairCount">0</span> 组）：
+    </div>
+    <table class="pair-table" id="pairTable">
+      <thead>
+        <tr>
+          <th>📄 资料</th>
+          <th>✅ 答案</th>
+          <th>💬 参考话术</th>
+        </tr>
+      </thead>
+      <tbody id="pairBody"></tbody>
+    </table>
+    <p style="font-size: 12px; color: #999; line-height: 1.6; margin-top: 12px;">
+      每份资料右侧有专属参考话术，点击「复制」即可粘贴到微信家长群。点击表格中的 ⬇ 按钮可直接下载对应的PDF文件。
+    </p>
+  </div>
+
+  <!-- 更新日志 -->
+  <div class="update-section" id="updateSection">
+    <div class="update-section-title">
+      <span>📅</span> 近三个月新增资料
+    </div>
+    <div class="update-loading" id="updateLoading">加载中...</div>
+    <ul class="update-list" id="updateList" style="display:none;"></ul>
+    <div class="update-empty" id="updateEmpty" style="display:none;">暂无新增资料</div>
+  </div>
+
+  <div class="service-status" id="statusBar">初始化中...</div>
+</div>
+
+<!-- API配置遮罩（云端模式未配置时弹出） -->
+<div class="proxy-overlay" id="apiSetupOverlay">
+  <div class="proxy-dialog">
+    <h3>⚙️ 配置后端服务</h3>
+    <p>云端页面需要通过后端服务才能搜索资料。请选择一种方式：</p>
+    <div class="proxy-step">
+      <strong>方式一：同一WiFi（最简单）</strong><br>
+      手机和电脑连同一个WiFi，电脑上查看IP地址，填入下方即可。<br>
+      格式：<code>http://你的电脑IP:8765</code>（如 <code>http://192.168.1.100:8765</code>）
+    </div>
+    <div class="proxy-step" style="margin-top:8px;">
+      <strong>方式二：公网访问（推荐ngrok）</strong><br>
+      电脑下载 <a href="https://ngrok.com" target="_blank">ngrok</a>，注册免费账号后运行：<br>
+      <code>ngrok http 8765</code><br>
+      复制生成的 <code>https://xxxx.ngrok-free.app</code> 填入下方。
+    </div>
+    <div class="proxy-input-row" style="margin-top:12px;">
+      <input type="text" id="apiBaseInput" placeholder="http://192.168.1.100:8765">
+      <button class="btn btn-primary" onclick="saveApiBase()">连接</button>
+    </div>
+    <span class="proxy-skip" onclick="skipApiSetup()">仅本地使用，跳过</span>
+  </div>
+</div>
+
+<script>
+// ====== 配置（统一从 Flask 后端 /api/config 获取共享规则） ======
+var SHARED_CONFIG = null;     // 从 /api/config 加载的共享规则
+var CONFIG_READY = false;     // 配置是否加载完成
+
+// 云端API地址（Flask后端地址，支持三种配置方式）
+var API_BASE = '';
+(function() {
+  // 1) URL参数 ?api= 或 ?proxy=
+  var params = new URLSearchParams(window.location.search);
+  var apiParam = params.get('api') || params.get('proxy');
+  if (apiParam) {
+    apiParam = apiParam.replace(/\/+$/, '');
+    localStorage.setItem('cloud_api_base', apiParam);
+    API_BASE = apiParam;
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState({}, '', window.location.origin + window.location.pathname);
+    }
+    return;
+  }
+  // 2) localStorage
+  var stored = localStorage.getItem('cloud_api_base');
+  if (stored) { API_BASE = stored; return; }
+  API_BASE = '';
+})();
+
+// 加载共享配置（从 Flask 后端取，代码里不写死任何密钥和规则）
+function loadSharedConfig() {
+  var url = (API_BASE || '') + '/api/config';
+  return fetch(url).then(function(r) { return r.json(); }).then(function(cfg) {
+    SHARED_CONFIG = cfg;
+    CONFIG_READY = true;
+    console.log('[config] 共享规则加载完成', cfg);
+    return cfg;
+  }).catch(function(e) {
+    console.warn('[config] 加载共享规则失败，将使用内置降级值', e);
+    // 降级：内置一份硬编码副本（仅当 Flask 不可达时使用）
+    SHARED_CONFIG = {
+      space_id: 'f613e85b2f404609b029d6dcb84bf00a',
+      subject_abbr: { '语文': 'YW', '数学': 'SX', '英语': 'YY', '科学': 'KX' },
+      grade_patterns: [
+        { label: '六年级', pattern: '(六上|六下|六年级|6年级|六)' },
+        { label: '七年级', pattern: '(七上|七下|七年级|7年级|初一)' },
+        { label: '八年级', pattern: '(八上|八下|八年级|8年级|初二)' }
+      ]
+    };
+    CONFIG_READY = true;
+    return SHARED_CONFIG;
+  });
+}
+
+// ====== 工具函数（仅保留显示用） ======
+function cleanHtml(text) {
+  if (!text) return '';
+  return text.replace(/<[^>]+>/g, '');
+}
+
+function escapeHtml(text) {
+  var d = document.createElement('div');
+  d.textContent = text || '';
+  return d.innerHTML;
+}
+
+// 时间戳 → 日期字符串
+function tsToDate(tsRaw) {
+  if (!tsRaw) return '未知';
+  try {
+    var d = new Date(parseInt(tsRaw) * 1000);
+    return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日';
+  } catch (e) {
+    return '未知';
+  }
+}
+
+// ====== API 调用（统一走 Flask 后端，不直连 MCP） ======
+function apiCall(endpoint, options) {
+  var url = API_BASE + endpoint;
+  var fetchOpts = { headers: { 'Content-Type': 'application/json' } };
+  if (options) {
+    fetchOpts.method = 'POST';
+    fetchOpts.body = JSON.stringify(options);
+  }
+  return fetch(url, fetchOpts).then(function(r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  });
+}
+
+// ====== 下载 ======
+function downloadFile(entryId) {
+  var base = API_BASE || '';
+  if (!base) { window.open('/api/download/' + encodeURIComponent(entryId), '_blank'); return; }
+  window.open(base + '/api/download/' + encodeURIComponent(entryId), '_blank');
+}
+
+// ====== 搜索入口（统一走 Flask API，不直连 MCP，无 IS_LOCAL 分支） ======
+function doSearch() {
+  var grade = document.getElementById('grade').value;
+  var subject = document.getElementById('subject').value;
+  var keyword = document.getElementById('keyword').value.trim();
+
+  if (!grade || !subject) { showError('请选择年级和学科'); return; }
+  if (!keyword) { showError('请输入知识点关键字'); return; }
+
+  var btn = document.getElementById('searchBtn');
+  btn.classList.add('loading');
+  btn.disabled = true;
+  hideError();
+  document.getElementById('resultSection').classList.remove('visible');
+
+  // 统一走 Flask /api/search（无论本地还是云端）
+  var url = API_BASE + '/api/search';
+  if (!API_BASE) {
+    // 没配 API_BASE = 大概率同域部署，直接用相对路径
+    url = '/api/search';
+  }
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ grade: grade, subject: subject, keyword: keyword })
+  }).then(function(r) { return r.json(); })
+  .then(function(data) {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+    if (data.error) { showError(data.error); return; }
+    renderResults(data);
+  }).catch(function(err) {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+    if (!API_BASE) {
+      showError('连接失败，请确认 Flask 后端服务已启动。');
+    } else {
+      showError('无法连接到后端服务（' + API_BASE + '），请确认地址正确。');
+    }
+  });
+}
+
+// ====== 渲染结果 ======
+function renderResults(data) {
+  var pairs = data.pairs || [];
+  document.getElementById('pairCount').textContent = pairs.length;
+
+  // 过滤提示
+  var filterHtml = '';
+  if (data.grade_filtered > 0 || data.keyword_mismatched > 0) {
+    filterHtml = '<div class="filtered-info">';
+    if (data.grade_filtered > 0) filterHtml += '⚠️ 已过滤 ' + data.grade_filtered + ' 条其他年级的资料。<br>';
+    if (data.keyword_mismatched > 0) filterHtml += '⚠️ 已过滤 ' + data.keyword_mismatched + ' 条与「' + escapeHtml(data.keyword || '') + '」文件名不匹配的资料。<br>';
+    filterHtml += '</div>';
+  }
+  var filterEl = document.getElementById('filterInfo');
+  if (filterHtml) { filterEl.innerHTML = filterHtml; filterEl.style.display = 'block'; }
+  else { filterEl.style.display = 'none'; }
+
+  // 三列表格
+  var bodyHtml = '';
+  if (pairs.length === 0) {
+    bodyHtml = '<tr><td colspan="3" style="text-align:center;color:#999;padding:20px;">未找到匹配资料，请尝试其他关键词</td></tr>';
+  } else {
+    for (var i = 0; i < pairs.length; i++) {
+      var p = pairs[i];
+      var mat = p.material;
+      var ans = p.answer;
+      bodyHtml += '<tr>';
+
+      // 资料列
+      bodyHtml += '<td>';
+      bodyHtml += '<span class="pair-name">' + escapeHtml(mat.name || '') + '</span>';
+      if (mat.date && mat.date !== '未知') {
+        bodyHtml += '<span class="pair-date">' + mat.date + '</span>';
+      }
+      if (mat.id) {
+        bodyHtml += '<a class="pair-dl" href="javascript:void(0)" onclick="downloadFile(\'' + encodeURIComponent(mat.id) + '\')" title="下载文件">⬇</a>';
+      }
+      if (p.is_standalone_answer) {
+        bodyHtml += '<span class="standalone-answer-tag">仅答案</span>';
+      }
+      bodyHtml += '</td>';
+
+      // 答案列
+      bodyHtml += '<td>';
+      if (ans) {
+        bodyHtml += '<span class="pair-name">' + escapeHtml(ans.name || '') + '</span>';
+        if (ans.date && ans.date !== '未知') {
+          bodyHtml += '<span class="pair-date">' + ans.date + '</span>';
+        }
+        if (ans.id) {
+          bodyHtml += '<a class="pair-dl" href="javascript:void(0)" onclick="downloadFile(\'' + encodeURIComponent(ans.id) + '\')" title="下载答案">⬇</a>';
+        }
+      } else if (p.is_standalone_answer) {
+        bodyHtml += '<span class="no-answer">—</span>';
+      } else {
+        bodyHtml += '<span class="no-answer">缺答案</span>';
+      }
+      bodyHtml += '</td>';
+
+      // 专属话术
+      bodyHtml += '<td>';
+      if (p.copy) {
+        bodyHtml += '<div class="per-copy">';
+        bodyHtml += '<div class="per-copy-text">' + escapeHtml(p.copy) + '</div>';
+        bodyHtml += '<div class="per-copy-actions">';
+        bodyHtml += '<button class="per-copy-btn" onclick="copyPerCopy(this,\'' + encodeURIComponent(p.copy || '') + '\')">复制</button>';
+        bodyHtml += '</div>';
+        bodyHtml += '</div>';
+      } else {
+        bodyHtml += '<span class="per-copy-loading">生成中…</span>';
+      }
+      bodyHtml += '</td>';
+      bodyHtml += '</tr>';
+    }
+  }
+  document.getElementById('pairBody').innerHTML = bodyHtml;
+  document.getElementById('resultSection').classList.add('visible');
+}
+
+// 复制逐份话术
+function copyPerCopy(btn, encoded) {
+  var text = decodeURIComponent(encoded);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function() {
+      btn.textContent = '已复制';
+      btn.classList.add('copied');
+      setTimeout(function() { btn.classList.remove('copied'); }, 1800);
+    }).catch(function() {
+      fallbackCopy(btn, text);
+    });
+  } else {
+    fallbackCopy(btn, text);
+  }
+}
+
+function fallbackCopy(btn, text) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed'; ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); btn.textContent = '已复制'; }
+  catch(e) { btn.textContent = '复制失败'; }
+  document.body.removeChild(ta);
+  btn.classList.add('copied');
+  setTimeout(function() { btn.classList.remove('copied'); }, 1800);
+}
+
+function showError(msg) {
+  var el = document.getElementById('errorBox');
+  el.textContent = msg;
+  el.classList.add('visible');
+}
+
+function hideError() {
+  document.getElementById('errorBox').classList.remove('visible');
+}
+
+// ====== 更新日志 ======
+function loadUpdates() {
+  var url = API_BASE ? (API_BASE + '/api/updates') : '/api/updates';
+  fetch(url).then(function(r) { return r.json(); })
+    .then(function(data) { renderUpdates(data.updates || []); })
+    .catch(function() { renderUpdatesError(); });
+}
+
+function renderUpdates(updates) {
+  document.getElementById('updateLoading').style.display = 'none';
+  if (!updates || updates.length === 0) {
+    document.getElementById('updateEmpty').style.display = 'block';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < updates.length; i++) {
+    var u = updates[i];
+    html += '<li class="update-item">';
+    html += '<span class="update-dot"></span>';
+    html += '<span class="update-name">' + escapeHtml(u.name) + '</span>';
+    html += '<span class="update-date">' + (u.date || '') + '</span>';
+    html += '</li>';
+  }
+  var listEl = document.getElementById('updateList');
+  listEl.innerHTML = html;
+  listEl.style.display = 'block';
+}
+
+function renderUpdatesError() {
+  document.getElementById('updateLoading').style.display = 'none';
+  document.getElementById('updateEmpty').style.display = 'block';
+  document.getElementById('updateEmpty').textContent = '更新日志加载失败';
+}
+
+// ====== API配置 ======
+function saveApiBase() {
+  var input = document.getElementById('apiBaseInput');
+  var url = (input.value || '').trim().replace(/\/+$/, '');
+  if (!url) { showError('请输入后端服务地址'); return; }
+  if (url.indexOf('http') !== 0) { showError('地址需以 http:// 或 https:// 开头'); return; }
+
+  document.getElementById('statusBar').textContent = '检测连接...';
+  document.getElementById('statusBar').className = 'service-status checking';
+
+  fetch(url + '/api/search', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ grade: '六年级', subject: '数学', keyword: '计算' })
+  }).then(function(r) { return r.json(); })
+    .then(function() {
+      localStorage.setItem('cloud_api_base', url);
+      API_BASE = url;
+      document.getElementById('apiSetupOverlay').classList.remove('show');
+      document.getElementById('statusBar').textContent = '已连接 ' + url.replace('http://','').replace('https://','').split(':')[0] + ' ✓';
+      document.getElementById('statusBar').className = 'service-status online';
+      hideError();
+      loadUpdates();
+    })
+    .catch(function() {
+      showError('无法连接 ' + url + ' ，请确认：1) Flask服务已启动（python server.py） 2) 地址正确 3) 手机和电脑在同一网络');
+      document.getElementById('statusBar').textContent = '连接失败';
+      document.getElementById('statusBar').className = 'service-status offline';
+    });
+}
+
+function skipApiSetup() {
+  document.getElementById('apiSetupOverlay').classList.remove('show');
+  document.getElementById('statusBar').textContent = '未配置后端 · 无法搜索';
+  document.getElementById('statusBar').className = 'service-status offline';
+  document.getElementById('modeHint').textContent = '⚠️ 未配置后端服务，搜索功能不可用。刷新页面可重新配置。';
+}
+
+function showApiSetup() {
+  document.getElementById('apiSetupOverlay').classList.add('show');
+  document.getElementById('apiBaseInput').value = API_BASE || '';
+  document.getElementById('apiBaseInput').focus();
+}
+function init() {
+  // 加载共享配置
+  loadSharedConfig();
+
+  if (API_BASE) {
+    document.getElementById('statusBar').textContent = '检测连接...';
+    document.getElementById('statusBar').className = 'service-status checking';
+    fetch(API_BASE + '/api/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ grade: '六年级', subject: '数学', keyword: '计算' })
+    }).then(function(r) { return r.json(); })
+      .then(function() {
+        document.getElementById('statusBar').textContent = '已连接 ' + API_BASE.replace('http://','').replace('https://','').split(':')[0] + ' \u2713';
+        document.getElementById('statusBar').className = 'service-status online';
+        document.getElementById('modeHint').textContent = '[云端模式] 选择年级和学科，输入知识点关键字，一键搜索资料并生成家长群话术。';
+        loadUpdates();
+      })
+      .catch(function() { showApiSetup(); });
+  } else {
+    // 同域部署（如 Render.com 全栈），直接尝试连接
+    document.getElementById('statusBar').textContent = '检测连接...';
+    document.getElementById('statusBar').className = 'service-status checking';
+    document.getElementById('modeHint').textContent = '选择年级和学科，输入知识点关键字，一键搜索资料并生成家长群话术。';
+    fetch('/api/health').then(function(r) { return r.json(); })
+      .then(function() {
+        document.getElementById('statusBar').textContent = '在线 \u2713';
+        document.getElementById('statusBar').className = 'service-status online';
+        loadUpdates();
+      })
+      .catch(function() {
+        // 同域也连不上，显示配置界面
+        showApiSetup();
+      });
+  }
+  document.getElementById('statusBar').style.cursor = 'pointer';
+  document.getElementById('statusBar').title = '点击重新配置后端服务';
+  document.getElementById('statusBar').addEventListener('click', function() {
+    showApiSetup();
+  });
+  updateQuickTags();
+  document.getElementById('subject').addEventListener('change', updateQuickTags);
+}
+
+function updateQuickTags() {
+  var subject = document.getElementById('subject').value;
+  var tags = [];
+  if (subject === '语文') tags = ['阅读理解', '作文', '文言文', '基础专项', '真题卷'];
+  else if (subject === '数学') tags = ['计算题', '应用题', '方程', '几何', '真题卷'];
+  else if (subject === '英语') tags = ['语法', '阅读理解', '作文', '单词', '真题卷'];
+  else if (subject === '科学') tags = ['实验', '知识点', '真题卷', '讲义'];
+  else tags = [];
+
+  var html = '';
+  for (var i = 0; i < tags.length; i++) {
+    html += '<button class="tag" onclick="setKeyword(\'' + tags[i] + '\')">' + tags[i] + '</button>';
+  }
+  document.getElementById('quickTags').innerHTML = html;
+}
+
+function setKeyword(val) {
+  document.getElementById('keyword').value = val;
+  document.getElementById('keyword').focus();
+}
+
+init();
+</script>
+</body>
+</html>
