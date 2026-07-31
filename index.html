@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+<title>市场资料自助查询</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:#f5f6fa;color:#333;min-height:100vh;padding-bottom:40px}
+.container{max-width:900px;margin:0 auto;padding:16px}
+.header{text-align:center;padding:24px 0 16px}
+.header h1{font-size:22px;font-weight:700;color:#1a1a2e;margin-bottom:6px}
+.header p{font-size:13px;color:#888}
+.search-card{background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 12px rgba(0,0,0,.06);margin-bottom:16px}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:13px;font-weight:600;color:#555;margin-bottom:6px}
+.form-group select,.form-group input{width:100%;padding:10px 14px;border:2px solid #e8e8e8;border-radius:10px;font-size:15px;transition:border-color .2s;appearance:none;-webkit-appearance:none;background:#fff}
+.form-group select{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23999' d='M6 8L0 0h12z'/%3E%3C/svg%3E") no-repeat right 14px center;padding-right:36px}
+.form-group select:focus,.form-group input:focus{outline:none;border-color:#4a6cf7}
+.btn-search{width:100%;padding:13px;background:linear-gradient(135deg,#4a6cf7,#6b8cff);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;transition:transform .1s}
+.btn-search:active{transform:scale(.98)}
+.btn-search:disabled{opacity:.6;cursor:not-allowed}
+.quick-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.quick-tag{padding:5px 12px;background:#f0f3ff;border-radius:20px;font-size:12px;color:#4a6cf7;cursor:pointer;transition:background .2s}
+.quick-tag:active{background:#d0d8ff}
+.result-section{display:none}
+.result-section.visible{display:block}
+.stats-bar{text-align:center;font-size:12px;color:#aaa;padding:8px 0;margin-bottom:8px}
+
+/* 三列表格 */
+.result-table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.04)}
+.result-table thead{background:#f8f9fc}
+.result-table th{padding:10px 8px;font-size:13px;font-weight:600;color:#666;text-align:left;border-bottom:2px solid #e8e8e8}
+.result-table td{padding:10px 8px;border-bottom:1px solid #f0f0f0;vertical-align:top;font-size:13px;line-height:1.5}
+.result-table tr:last-child td{border-bottom:none}
+.col-title{width:28%}
+.col-answer{width:22%}
+.col-copy{width:50%}
+.file-shortname{font-weight:500;color:#1a1a2e;margin-bottom:4px;word-break:break-all}
+.dl-btn{display:inline-block;padding:4px 12px;background:#4a6cf7;color:#fff;border-radius:6px;font-size:11px;text-decoration:none;cursor:pointer;margin-top:4px}
+.dl-btn:active{background:#3a5ce5}
+.dl-btn.disabled{background:#ccc;cursor:not-allowed;pointer-events:none}
+.no-answer{color:#999;font-size:12px;font-style:italic}
+.copy-cell{position:relative}
+.copy-text{font-size:13px;line-height:1.6;color:#444;padding-right:50px}
+.copy-btn{position:absolute;top:4px;right:4px;padding:4px 10px;background:#4a6cf7;color:#fff;border:none;border-radius:6px;font-size:11px;cursor:pointer;opacity:.85}
+.copy-btn:active{opacity:1}
+
+/* 手机端卡片式 */
+@media(max-width:640px){
+  .container{padding:10px}
+  .header{padding:18px 0 12px}
+  .header h1{font-size:19px}
+  .header p{font-size:12px}
+  .search-card{padding:16px}
+  .result-table,.result-table tbody,.result-table tr,.result-table td{display:block;width:100%}
+  .result-table thead{display:none}
+  .result-table{border-radius:14px;overflow:hidden;box-shadow:0 2px 10px rgba(74,108,247,.06)}
+  .result-table tr{margin-bottom:14px;border:1px solid #e3e8ff;border-radius:14px;overflow:hidden;background:#fff}
+  .result-table td{border:none;border-bottom:1px solid #f0f2f7;padding:12px 14px}
+  .result-table tr:last-child td:last-child{border-bottom:none}
+  .result-table td::before{content:attr(data-label);display:block;font-size:11px;font-weight:700;color:#4a6cf7;letter-spacing:1px;margin-bottom:8px}
+  .dl-btn,.copy-btn{display:block;width:100%;text-align:center;padding:11px;font-size:14px;margin-top:8px;border-radius:8px}
+  .copy-cell{position:static}
+  .copy-text{padding-right:0;margin-bottom:8px;font-size:14px;line-height:1.7}
+  .copy-btn{position:static}
+  .file-shortname{font-size:14px;line-height:1.5}
+  .no-answer{font-size:13px}
+}
+
+.empty-state{text-align:center;padding:40px 20px;color:#999}
+.empty-state .icon{font-size:36px;margin-bottom:8px}
+.error-msg{background:#fff3e0;border:1px solid #ffe0b2;border-radius:10px;padding:12px 16px;color:#e65100;font-size:14px;margin-bottom:12px;display:none}
+.loading-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,.8);z-index:999;justify-content:center;align-items:center}
+.loading-overlay.show{display:flex}
+.loading-overlay .spinner{width:36px;height:36px;border:3px solid #e8e8e8;border-top-color:#4a6cf7;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* 更新日志 */
+.updates-section{margin-top:20px}
+.updates-section h3{font-size:15px;font-weight:600;color:#555;margin-bottom:10px;padding-left:4px}
+.update-item{display:flex;align-items:flex-start;padding:10px 14px;background:#fff;border-radius:10px;margin-bottom:6px;font-size:13px;box-shadow:0 1px 3px rgba(0,0,0,.03);flex-wrap:wrap;gap:4px}
+.update-item .date{color:#4a6cf7;font-weight:600;min-width:90px}
+.update-item .name{color:#555;flex:1;word-break:break-all;line-height:1.5}
+.update-item .tag{padding:2px 6px;border-radius:4px;font-size:10px;margin-left:4px;white-space:nowrap}
+.tag-yw{background:#e3f2fd;color:#1565c0}
+.tag-sx{background:#e8f5e9;color:#2e7d32}
+.tag-yy{background:#fff3e0;color:#e65100}
+.tag-kx{background:#f3e5f5;color:#7b1fa2}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>市场资料自助查询</h1>
+    <p>选年级和学科，输入关键字，一键搜索资料并生成话术</p>
+  </div>
+
+  <div class="search-card">
+    <div class="form-group">
+      <label>年级</label>
+      <select id="grade">
+        <option value="">请选择年级</option>
+        <option value="六年级">六年级</option>
+        <option value="七年级">七年级</option>
+        <option value="八年级">八年级</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>学科</label>
+      <select id="subject">
+        <option value="">请选择学科</option>
+        <option value="语文">语文</option>
+        <option value="数学">数学</option>
+        <option value="英语">英语</option>
+        <option value="科学">科学</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>知识点关键字</label>
+      <input type="text" id="keyword" placeholder="如：阅读理解、计算、语法…" autocomplete="off">
+      <div class="quick-tags" id="quickTags"></div>
+    </div>
+    <button class="btn-search" id="searchBtn" onclick="doSearch()">搜索资料</button>
+  </div>
+
+  <div class="error-msg" id="errorMsg"></div>
+
+  <div class="result-section" id="resultSection">
+    <div class="stats-bar" id="statsBar"></div>
+    <div id="resultList"></div>
+  </div>
+
+  <div class="updates-section">
+    <h3>最近更新</h3>
+    <div id="updateList"></div>
+  </div>
+</div>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+</div>
+
+<script>
+var ALL_DATA = null;
+var COPY_TEXTS = [];
+var QUICK_TAGS = {
+  '语文': ['阅读理解', '文言文', '古诗词', '作文', '期末', '期中', '单元练习', '基础知识'],
+  '数学': ['计算', '方程', '几何', '分数', '比例', '期末', '期中', '单元练习'],
+  '英语': ['语法', '词汇', '阅读理解', '完形填空', '听力', '期末', '期中', '写作'],
+  '科学': ['实验', '物理', '生物', '地球', '能量', '期末', '期中', '知识点']
+};
+var SUBJECT_ABBR = {'语文':'YW','数学':'SX','英语':'YY','科学':'KX'};
+
+function showLoading(show) {
+  document.getElementById('loadingOverlay').classList.toggle('show', show);
+}
+
+function showError(msg) {
+  var el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(function() { el.style.display = 'none'; }, 5000);
+}
+
+function hideError() {
+  document.getElementById('errorMsg').style.display = 'none';
+}
+
+function escapeHtml(text) {
+  var d = document.createElement('div');
+  d.textContent = text || '';
+  return d.innerHTML;
+}
+
+function updateQuickTags() {
+  var subject = document.getElementById('subject').value;
+  var container = document.getElementById('quickTags');
+  container.innerHTML = '';
+  if (!subject) return;
+  var tags = QUICK_TAGS[subject] || [];
+  tags.forEach(function(tag) {
+    var el = document.createElement('span');
+    el.className = 'quick-tag';
+    el.textContent = tag;
+    el.onclick = function() {
+      document.getElementById('keyword').value = tag;
+    };
+    container.appendChild(el);
+  });
+}
+
+// 门禁G1：关键字必须与文件名相关
+function nameContainsKeyword(name, keyword) {
+  if (!keyword) return true;
+  if (name.indexOf(keyword) !== -1) return true;
+  for (var i = keyword.length - 1; i > 0; i--) {
+    if (name.indexOf(keyword.slice(0, i)) !== -1) return true;
+  }
+  return false;
+}
+
+function getShortName(name) {
+  var short = name.replace(/【[^】]*】/g, '').trim();
+  short = short.replace(/[（(][^)）]*[)）]/g, '').trim();
+  if (short.length > 35) short = short.slice(0, 35) + '…';
+  return short || name;
+}
+
+function doSearch() {
+  var grade = document.getElementById('grade').value;
+  var subject = document.getElementById('subject').value;
+  var keyword = document.getElementById('keyword').value.trim();
+
+  if (!grade) { showError('请选择年级'); return; }
+  if (!subject) { showError('请选择学科'); return; }
+  if (!keyword) { showError('请输入知识点关键字'); return; }
+
+  hideError();
+  showLoading(true);
+
+  setTimeout(function() {
+    var results = [];
+    var paired = ALL_DATA.paired || [];
+
+    for (var i = 0; i < paired.length; i++) {
+      var p = paired[i];
+      var mat = p.material;
+      if (!mat) continue;
+
+      // 门禁G1：学科门禁
+      if (mat.subject !== subject) continue;
+      // 门禁G1：年级门禁
+      if (mat.grade !== grade) continue;
+      // 门禁G1：关键字匹配
+      if (!nameContainsKeyword(mat.name, keyword)) continue;
+
+      results.push(p);
+    }
+
+    renderResults(results, grade, subject, keyword);
+    showLoading(false);
+  }, 300);
+}
+
+function renderResults(results, grade, subject, keyword) {
+  var section = document.getElementById('resultSection');
+  var list = document.getElementById('resultList');
+  var stats = document.getElementById('statsBar');
+  COPY_TEXTS = [];
+
+  if (results.length === 0) {
+    section.classList.add('visible');
+    stats.innerHTML = '没有找到匹配的资料，试试换个关键字？';
+    list.innerHTML = '<div class="empty-state"><div class="icon">📭</div><div>未找到「' + escapeHtml(keyword) + '」相关的' + escapeHtml(grade) + escapeHtml(subject) + '资料</div></div>';
+    return;
+  }
+
+  section.classList.add('visible');
+  stats.textContent = '共找到 ' + results.length + ' 份资料';
+
+  var html = '<table class="result-table"><thead><tr>';
+  html += '<th class="col-title">题目</th>';
+  html += '<th class="col-answer">答案解析</th>';
+  html += '<th class="col-copy">参考话术</th>';
+  html += '</tr></thead><tbody>';
+
+  for (var i = 0; i < results.length; i++) {
+    var p = results[i];
+    var mat = p.material;
+    var ans = p.answer;
+
+    var matShort = getShortName(mat.name);
+    var matDl = mat.download_url;
+    var ansDl = ans ? ans.download_url : null;
+    var ansShort = ans ? getShortName(ans.name) : '';
+
+    // 门禁G4：题目+答案配对展示
+    html += '<tr>';
+
+    // 题目列
+    html += '<td class="col-title" data-label="题目">';
+    html += '<div class="file-shortname">' + escapeHtml(matShort) + '</div>';
+    if (matDl) {
+      html += '<a href="' + escapeHtml(matDl) + '" download="' + escapeHtml(mat.name) + '" class="dl-btn">下载题目</a>';
+    } else {
+      html += '<span class="dl-btn disabled">暂不可下载</span>';
+    }
+    html += '</td>';
+
+    // 答案列
+    html += '<td class="col-answer" data-label="答案解析">';
+    if (ans) {
+      html += '<div class="file-shortname">' + escapeHtml(ansShort) + '</div>';
+      if (ansDl) {
+        html += '<a href="' + escapeHtml(ansDl) + '" download="' + escapeHtml(ans.name) + '" class="dl-btn">下载答案</a>';
+      } else {
+        html += '<span class="dl-btn disabled">暂不可下载</span>';
+      }
+    } else {
+      html += '<span class="no-answer">缺答案</span>';
+    }
+    html += '</td>';
+
+    // 话术列
+    COPY_TEXTS[i] = p.copy || '';
+    html += '<td class="col-copy" data-label="参考话术">';
+    html += '<div class="copy-text" id="copy_' + i + '">' + escapeHtml(p.copy || '') + '</div>';
+    html += '<button class="copy-btn" onclick="copyText(' + i + ')">复制话术</button>';
+    html += '</td>';
+
+    html += '</tr>';
+  }
+
+  html += '</tbody></table>';
+  list.innerHTML = html;
+}
+
+function copyText(idx) {
+  var text = COPY_TEXTS[idx] || '';
+  if (!text) return;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function() {
+      showToast('话术已复制');
+    }).catch(function() {
+      fallbackCopy(text);
+    });
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); showToast('话术已复制'); }
+  catch (e) { showToast('复制失败，请手动选择'); }
+  document.body.removeChild(ta);
+}
+
+function showToast(msg) {
+  var toast = document.createElement('div');
+  toast.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.75);color:#fff;padding:10px 24px;border-radius:8px;font-size:14px;z-index:9999;';
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(function() { toast.remove(); }, 1500);
+}
+
+// 门禁G6：更新日志显示完整文件名
+function renderUpdates() {
+  var files = (ALL_DATA.files || []).slice().sort(function(a, b) {
+    return (b.updated_ts || '0').localeCompare(a.updated_ts || '0');
+  });
+
+  var now = Date.now() / 1000;
+  var threeMonthsAgo = now - 90 * 24 * 3600;
+
+  var recent = files.filter(function(f) {
+    var ts = parseInt(f.updated_ts) || 0;
+    return ts > threeMonthsAgo;
+  });
+
+  var list = document.getElementById('updateList');
+  if (recent.length === 0) {
+    list.innerHTML = '<div style="text-align:center;color:#aaa;padding:16px;font-size:13px">暂无近期更新</div>';
+    return;
+  }
+
+  var html = '';
+  var abbrMap = {YW:'yw', SX:'sx', YY:'yy', KX:'kx'};
+  for (var i = 0; i < Math.min(recent.length, 30); i++) {
+    var f = recent[i];
+    var subjAbbr = 'yw';
+    for (var k in SUBJECT_ABBR) {
+      if (f.name.indexOf('【' + SUBJECT_ABBR[k] + '】') !== -1) {
+        subjAbbr = abbrMap[SUBJECT_ABBR[k]];
+        break;
+      }
+    }
+
+    // 门禁G6：显示完整文件名（含【前缀】）
+    html += '<div class="update-item">';
+    html += '<span class="date">' + escapeHtml(f.date) + '</span>';
+    html += '<span class="name">' + escapeHtml(f.name) + '</span>';
+    html += '<span class="tag tag-' + subjAbbr + '">' + escapeHtml(f.subject || '') + '</span>';
+    html += '</div>';
+  }
+
+  if (recent.length > 30) {
+    html += '<div style="text-align:center;color:#aaa;padding:8px;font-size:12px">还有 ' + (recent.length - 30) + ' 条更新…</div>';
+  }
+
+  list.innerHTML = html;
+}
+
+// 加载数据
+function loadData() {
+  showLoading(true);
+  fetch('data.json?_=' + Date.now())
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      ALL_DATA = data;
+      showLoading(false);
+      renderUpdates();
+    })
+    .catch(function(err) {
+      showLoading(false);
+      showError('数据加载失败，请刷新页面重试');
+    });
+}
+
+// 事件绑定
+document.getElementById('subject').addEventListener('change', updateQuickTags);
+document.getElementById('keyword').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') doSearch();
+});
+
+// 启动
+loadData();
+</script>
+</body>
+</html>
